@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assistant.Core", "Assistant.Core\Assistant.Core.csproj", "{ACF563E6-47A0-46D7-92D5-0364499D17BB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assistant.Cli", "Assistant.Cli\Assistant.Cli.csproj", "{F996F8F7-2046-48E7-9E33-80F7E51BDFF2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{ACF563E6-47A0-46D7-92D5-0364499D17BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACF563E6-47A0-46D7-92D5-0364499D17BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ACF563E6-47A0-46D7-92D5-0364499D17BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACF563E6-47A0-46D7-92D5-0364499D17BB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F996F8F7-2046-48E7-9E33-80F7E51BDFF2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F996F8F7-2046-48E7-9E33-80F7E51BDFF2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F996F8F7-2046-48E7-9E33-80F7E51BDFF2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F996F8F7-2046-48E7-9E33-80F7E51BDFF2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
