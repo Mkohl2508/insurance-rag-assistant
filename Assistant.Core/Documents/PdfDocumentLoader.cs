@@ -52,7 +52,10 @@ public sealed class PdfDocumentLoader
             CreatedAt: info.GetCreatedDateTimeOffset());
     }
 
-    /// <summary>Loads all *.pdf files in a directory (not recursive), ordered by file name.</summary>
+    /// <summary>
+    /// Loads all *.pdf files in a directory (not recursive), ordered by file name.
+    /// Files with identical content are loaded once (the first by name), so chunk IDs stay unique.
+    /// </summary>
     /// <exception cref="DirectoryNotFoundException">The directory does not exist.</exception>
     public IReadOnlyList<SourceDocument> LoadDirectory(string directory)
     {
@@ -62,6 +65,7 @@ public sealed class PdfDocumentLoader
         return Directory.EnumerateFiles(directory, "*.pdf", new EnumerationOptions { MatchCasing = MatchCasing.CaseInsensitive })
             .Order(StringComparer.OrdinalIgnoreCase)
             .Select(LoadFile)
+            .DistinctBy(d => d.ContentHash)
             .ToList();
     }
 

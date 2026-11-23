@@ -107,6 +107,17 @@ public sealed class PdfDocumentLoaderTests : IDisposable
     }
 
     [Fact]
+    public void LoadDirectory_SkipsFilesWithDuplicateContent()
+    {
+        var original = CreatePdf("a.pdf", ["Same"]);
+        File.Copy(original, Path.Combine(_directory, "b.pdf"));
+
+        var documents = _loader.LoadDirectory(_directory);
+
+        Assert.Equal(["a.pdf"], documents.Select(d => d.FileName));
+    }
+
+    [Fact]
     public void LoadDirectory_MatchesExtensionCaseInsensitively()
     {
         CreatePdf("UPPER.PDF", ["Text"]);
