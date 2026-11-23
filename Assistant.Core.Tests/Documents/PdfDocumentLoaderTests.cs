@@ -84,6 +84,17 @@ public sealed class PdfDocumentLoaderTests : IDisposable
     }
 
     [Fact]
+    public void LoadFile_InvalidPdf_ThrowsWithFileName()
+    {
+        var path = Path.Combine(_directory, "broken.pdf");
+        File.WriteAllText(path, "not a pdf");
+
+        var ex = Assert.Throws<InvalidDataException>(() => _loader.LoadFile(path));
+
+        Assert.Contains("broken.pdf", ex.Message);
+    }
+
+    [Fact]
     public void LoadDirectory_LoadsOnePdfDocumentPerFileOrderedByName()
     {
         CreatePdf("b.pdf", ["Second"]);

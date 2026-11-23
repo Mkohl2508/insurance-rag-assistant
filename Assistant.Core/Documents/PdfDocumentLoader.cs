@@ -10,10 +10,23 @@ namespace Assistant.Core.Documents;
 public sealed class PdfDocumentLoader
 {
     /// <summary>Loads a single PDF file with its metadata and all pages that contain text.</summary>
+    /// <exception cref="InvalidDataException">The file is not a readable PDF; the message names the file.</exception>
     public SourceDocument LoadFile(string path)
     {
         var file = new FileInfo(path);
         var bytes = File.ReadAllBytes(file.FullName);
+        try
+        {
+            return Read(file, bytes);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidDataException($"Could not read PDF '{file.Name}': {ex.Message}", ex);
+        }
+    }
+
+    private static SourceDocument Read(FileInfo file, byte[] bytes)
+    {
         using var document = PdfDocument.Open(bytes);
 
         var pages = new List<DocumentPage>();
