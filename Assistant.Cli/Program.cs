@@ -54,6 +54,8 @@ while (true)
     {
         var result = await session.SendAsync(input);
         Console.WriteLine(result.Text);
+        if (result.FinishReason is not null && result.FinishReason != "stop")
+            Console.WriteLine($"[Warning: answer may be incomplete (finish reason: {result.FinishReason})]");
         Console.WriteLine(
             $"[{result.Model} | in {result.Usage.InputTokens} / out {result.Usage.OutputTokens} " +
             $"| {result.Duration.TotalSeconds:F1}s | session total {session.TotalUsage.TotalTokens} tokens]");
