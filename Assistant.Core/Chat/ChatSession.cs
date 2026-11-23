@@ -67,7 +67,7 @@ public sealed class ChatSession
             response.Text,
             response.ModelId,
             usage,
-            response.FinishReason?.Value,
+            response.FinishReason,
             stopwatch.Elapsed);
     }
 

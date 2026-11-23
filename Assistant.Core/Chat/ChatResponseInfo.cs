@@ -1,3 +1,5 @@
+using Microsoft.Extensions.AI;
+
 namespace Assistant.Core.Chat;
 
 /// <summary>
@@ -7,12 +9,12 @@ public sealed record ChatResponseInfo(
     string Text,
     string? Model,
     TokenUsage Usage,
-    string? FinishReason,
+    ChatFinishReason? FinishReason,
     TimeSpan Duration)
 {
     /// <summary>
     /// False if the model stopped for another reason than finishing its answer
     /// (e.g. token limit or content filter). An unknown finish reason counts as complete.
     /// </summary>
-    public bool IsComplete => FinishReason is null || FinishReason == "stop";
+    public bool IsComplete => FinishReason is null || FinishReason == ChatFinishReason.Stop;
 }

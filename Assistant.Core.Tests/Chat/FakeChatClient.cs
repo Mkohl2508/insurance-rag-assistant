@@ -13,12 +13,13 @@ internal sealed class FakeChatClient : IChatClient
     public List<IReadOnlyList<ChatMessage>> ReceivedMessages { get; } = [];
     public List<ChatOptions?> ReceivedOptions { get; } = [];
 
-    public FakeChatClient Returns(string text, long inputTokens = 10, long outputTokens = 5, string model = "fake-model")
+    public FakeChatClient Returns(
+        string text, long inputTokens = 10, long outputTokens = 5, string model = "fake-model", string? finishReason = "stop")
     {
         _responses.Enqueue(() => new ChatResponse(new ChatMessage(ChatRole.Assistant, text))
         {
             ModelId = model,
-            FinishReason = ChatFinishReason.Stop,
+            FinishReason = finishReason is null ? null : new ChatFinishReason(finishReason),
             Usage = new UsageDetails
             {
                 InputTokenCount = inputTokens,

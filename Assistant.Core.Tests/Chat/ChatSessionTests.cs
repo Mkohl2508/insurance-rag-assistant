@@ -16,7 +16,7 @@ public class ChatSessionTests
         Assert.Equal("Hello!", result.Text);
         Assert.Equal("m1", result.Model);
         Assert.Equal(new TokenUsage(12, 3, 15), result.Usage);
-        Assert.Equal("stop", result.FinishReason);
+        Assert.Equal(ChatFinishReason.Stop, result.FinishReason);
     }
 
     [Fact]
@@ -89,6 +89,22 @@ public class ChatSessionTests
 
         Assert.Equal(new TokenUsage(20, 7, 27), session.TotalUsage);
         Assert.Equal(new TokenUsage(30, 12, 42), session.LifetimeUsage);
+    }
+
+    [Theory]
+    [InlineData("stop", true)]
+    [InlineData("STOP", true)]
+    [InlineData(null, true)]
+    [InlineData("length", false)]
+    [InlineData("content_filter", false)]
+    public async Task SendAsync_IsComplete_DependsOnFinishReason(string? finishReason, bool expected)
+    {
+        var client = new FakeChatClient().Returns("A1", finishReason: finishReason);
+        var session = new ChatSession(client);
+
+        var result = await session.SendAsync("Q1");
+
+        Assert.Equal(expected, result.IsComplete);
     }
 
     [Fact]
