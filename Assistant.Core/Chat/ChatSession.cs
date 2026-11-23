@@ -31,7 +31,11 @@ public sealed class ChatSession
 
     public IReadOnlyList<ChatMessage> History => _history;
 
+    /// <summary>Token usage since the last <see cref="Reset"/>.</summary>
     public TokenUsage TotalUsage { get; private set; } = TokenUsage.Empty;
+
+    /// <summary>Token usage over the whole lifetime of the session; not cleared by <see cref="Reset"/>.</summary>
+    public TokenUsage LifetimeUsage { get; private set; } = TokenUsage.Empty;
 
     public async Task<ChatResponseInfo> SendAsync(string prompt, CancellationToken cancellationToken = default)
     {
@@ -57,6 +61,7 @@ public sealed class ChatSession
 
         var usage = TokenUsage.From(response.Usage);
         TotalUsage += usage;
+        LifetimeUsage += usage;
 
         return new ChatResponseInfo(
             response.Text,

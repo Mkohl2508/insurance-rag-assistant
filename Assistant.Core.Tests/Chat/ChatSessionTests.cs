@@ -76,6 +76,22 @@ public class ChatSessionTests
     }
 
     [Fact]
+    public async Task LifetimeUsage_SurvivesReset()
+    {
+        var client = new FakeChatClient()
+            .Returns("A1", inputTokens: 10, outputTokens: 5)
+            .Returns("A2", inputTokens: 20, outputTokens: 7);
+        var session = new ChatSession(client);
+
+        await session.SendAsync("Q1");
+        session.Reset();
+        await session.SendAsync("Q2");
+
+        Assert.Equal(new TokenUsage(20, 7, 27), session.TotalUsage);
+        Assert.Equal(new TokenUsage(30, 12, 42), session.LifetimeUsage);
+    }
+
+    [Fact]
     public async Task Options_ArePassedToClient()
     {
         var client = new FakeChatClient().Returns("A1");
