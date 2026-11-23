@@ -41,12 +41,21 @@ while (true)
     if (input is null) break;
 
     var command = input.Trim();
-    if (command == "/exit") break;
     if (command.Length == 0) continue;
-    if (command == "/reset")
+
+    if (command.StartsWith('/'))
     {
-        session.Reset();
-        Console.WriteLine("History cleared.");
+        if (command.Equals("/exit", StringComparison.OrdinalIgnoreCase)) break;
+
+        if (command.Equals("/reset", StringComparison.OrdinalIgnoreCase))
+        {
+            session.Reset();
+            Console.WriteLine("History cleared.");
+        }
+        else
+        {
+            Console.WriteLine($"Unknown command '{command}'. Available: /reset, /exit");
+        }
         continue;
     }
 
