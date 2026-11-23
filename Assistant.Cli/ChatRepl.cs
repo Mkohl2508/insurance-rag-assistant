@@ -27,6 +27,7 @@ internal sealed class ChatRepl
         {
             ["/reset"] = new("clears the history", Reset),
             ["/pages"] = new("lists the loaded PDF pages", ShowPages),
+            ["/chunks"] = new("lists the chunks of the loaded PDFs", ShowChunks),
             ["/exit"] = new("quits", () => _exitRequested = true),
         };
     }
@@ -69,28 +70,43 @@ internal sealed class ChatRepl
 
     private void ShowPages()
     {
+        foreach (var document in LoadDocuments())
+        {
+            var title = document.Title is null ? "" : $" \"{document.Title}\"";
+            Console.WriteLine(
+                $"{document.FileName}{title} ({document.Pages.Count}/{document.TotalPageCount} pages with text, " +
+                $"{document.SizeBytes / 1024.0:F0} KB)");
+            foreach (var page in document.Pages)
+                Console.WriteLine($"  p{page.PageNumber,-3} {Preview(page.Text)}");
+        }
+    }
+
+    private void ShowChunks()
+    {
+        var chunker = new DocumentChunker();
+        foreach (var document in LoadDocuments())
+        {
+            var chunks = chunker.Chunk(document);
+            Console.WriteLine($"{document.FileName} ({chunks.Count} chunks)");
+            foreach (var chunk in chunks)
+                Console.WriteLine($"  {chunk.Id}  {chunk.Text.Length,3}  {Preview(chunk.Text)}");
+        }
+    }
+
+    /// <summary>Loads all PDFs from the data directory; prints a message and returns none if loading fails or finds nothing.</summary>
+    private IReadOnlyList<SourceDocument> LoadDocuments()
+    {
         try
         {
             var documents = new PdfDocumentLoader().LoadDirectory(_documents.DataDirectory);
             if (documents.Count == 0)
-            {
                 Console.WriteLine($"No PDF files found in '{Path.GetFullPath(_documents.DataDirectory)}'.");
-                return;
-            }
-
-            foreach (var document in documents)
-            {
-                var title = document.Title is null ? "" : $" \"{document.Title}\"";
-                Console.WriteLine(
-                    $"{document.FileName}{title} ({document.Pages.Count}/{document.TotalPageCount} pages with text, " +
-                    $"{document.SizeBytes / 1024.0:F0} KB)");
-                foreach (var page in document.Pages)
-                    Console.WriteLine($"  p{page.PageNumber,-3} {Preview(page.Text)}");
-            }
+            return documents;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error: {ex.Message}");
+            return [];
         }
     }
 
