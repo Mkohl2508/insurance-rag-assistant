@@ -71,17 +71,20 @@ internal sealed class ChatRepl
     {
         try
         {
-            var pages = new PdfDocumentLoader().LoadDirectory(_documents.DataDirectory);
-            if (pages.Count == 0)
+            var documents = new PdfDocumentLoader().LoadDirectory(_documents.DataDirectory);
+            if (documents.Count == 0)
             {
-                Console.WriteLine($"No PDF pages found in '{Path.GetFullPath(_documents.DataDirectory)}'.");
+                Console.WriteLine($"No PDF files found in '{Path.GetFullPath(_documents.DataDirectory)}'.");
                 return;
             }
 
-            foreach (var file in pages.GroupBy(p => p.FileName))
+            foreach (var document in documents)
             {
-                Console.WriteLine($"{file.Key} ({file.Count()} pages)");
-                foreach (var page in file)
+                var title = document.Title is null ? "" : $" \"{document.Title}\"";
+                Console.WriteLine(
+                    $"{document.FileName}{title} ({document.Pages.Count}/{document.TotalPageCount} pages with text, " +
+                    $"{document.SizeBytes / 1024.0:F0} KB)");
+                foreach (var page in document.Pages)
                     Console.WriteLine($"  p{page.PageNumber,-3} {Preview(page.Text)}");
             }
         }

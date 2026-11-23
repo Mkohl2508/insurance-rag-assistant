@@ -14,37 +14,85 @@ public sealed class PdfDocumentLoaderTests : IDisposable
     public void Dispose() => Directory.Delete(_directory, recursive: true);
 
     [Fact]
-    public void LoadFile_ReturnsOnePagePerPdfPageWithMetadata()
+    public void LoadFile_ReturnsOnePagePerPdfPage()
     {
-        var path = CreatePdf("policy.pdf", "Fire damage", "Water damage");
+        var path = CreatePdf("policy.pdf", ["Fire damage", "Water damage"]);
 
-        var pages = _loader.LoadFile(path);
+        var document = _loader.LoadFile(path);
 
-        Assert.Equal(2, pages.Count);
-        Assert.Equal(new DocumentPage("policy.pdf", 1, "Fire damage"), pages[0]);
-        Assert.Equal(new DocumentPage("policy.pdf", 2, "Water damage"), pages[1]);
+        Assert.Equal([new DocumentPage(1, "Fire damage"), new DocumentPage(2, "Water damage")], document.Pages);
     }
 
     [Fact]
-    public void LoadFile_SkipsPagesWithoutText()
+    public void LoadFile_ReturnsFileMetadata()
     {
-        var path = CreatePdf("policy.pdf", "Cover", "", "Exclusions");
+        var path = CreatePdf("policy.pdf", ["Fire damage"]);
 
-        var pages = _loader.LoadFile(path);
+        var document = _loader.LoadFile(path);
 
-        Assert.Equal([1, 3], pages.Select(p => p.PageNumber));
+        Assert.Equal("policy.pdf", document.FileName);
+        Assert.Equal(Path.GetFullPath(path), document.FilePath);
+        Assert.Equal(DocumentFormat.Pdf, document.Format);
+        Assert.Equal(new FileInfo(path).Length, document.SizeBytes);
+        Assert.Equal(File.GetLastWriteTimeUtc(path), document.LastModified.UtcDateTime);
+        Assert.Matches("^[0-9a-f]{64}$", document.ContentHash);
     }
 
     [Fact]
-    public void LoadDirectory_LoadsOnlyPdfFilesOrderedByName()
+    public void LoadFile_SkipsPagesWithoutTextButCountsThem()
     {
-        CreatePdf("b.pdf", "Second");
-        CreatePdf("a.pdf", "First");
+        var path = CreatePdf("policy.pdf", ["Cover", "", "Exclusions"]);
+
+        var document = _loader.LoadFile(path);
+
+        Assert.Equal([1, 3], document.Pages.Select(p => p.PageNumber));
+        Assert.Equal(3, document.TotalPageCount);
+    }
+
+    [Fact]
+    public void LoadFile_ReadsTitleAndAuthorFromPdfInformation()
+    {
+        var path = CreatePdf("policy.pdf", ["Text"], title: "Home Insurance Terms", author: "ACME Insurance");
+
+        var document = _loader.LoadFile(path);
+
+        Assert.Equal("Home Insurance Terms", document.Title);
+        Assert.Equal("ACME Insurance", document.Author);
+    }
+
+    [Fact]
+    public void LoadFile_ReturnsNullForBlankTitleAndAuthor()
+    {
+        var path = CreatePdf("policy.pdf", ["Text"], title: "  ");
+
+        var document = _loader.LoadFile(path);
+
+        Assert.Null(document.Title);
+        Assert.Null(document.Author);
+    }
+
+    [Fact]
+    public void LoadFile_ContentHashDependsOnlyOnContent()
+    {
+        var first = _loader.LoadFile(CreatePdf("a.pdf", ["Same"]));
+        var copy = Path.Combine(_directory, "copy.pdf");
+        File.Copy(first.FilePath, copy);
+        var different = _loader.LoadFile(CreatePdf("c.pdf", ["Different"]));
+
+        Assert.Equal(first.ContentHash, _loader.LoadFile(copy).ContentHash);
+        Assert.NotEqual(first.ContentHash, different.ContentHash);
+    }
+
+    [Fact]
+    public void LoadDirectory_LoadsOnePdfDocumentPerFileOrderedByName()
+    {
+        CreatePdf("b.pdf", ["Second"]);
+        CreatePdf("a.pdf", ["First"]);
         File.WriteAllText(Path.Combine(_directory, "notes.txt"), "ignored");
 
-        var pages = _loader.LoadDirectory(_directory);
+        var documents = _loader.LoadDirectory(_directory);
 
-        Assert.Equal(["a.pdf", "b.pdf"], pages.Select(p => p.FileName));
+        Assert.Equal(["a.pdf", "b.pdf"], documents.Select(d => d.FileName));
     }
 
     [Fact]
@@ -55,9 +103,11 @@ public sealed class PdfDocumentLoaderTests : IDisposable
         Assert.Throws<DirectoryNotFoundException>(() => _loader.LoadDirectory(missing));
     }
 
-    private string CreatePdf(string fileName, params string[] pageTexts)
+    private string CreatePdf(string fileName, string[] pageTexts, string? title = null, string? author = null)
     {
         var builder = new PdfDocumentBuilder();
+        builder.DocumentInformation.Title = title;
+        builder.DocumentInformation.Author = author;
         var font = builder.AddStandard14Font(Standard14Font.Helvetica);
 
         foreach (var text in pageTexts)
