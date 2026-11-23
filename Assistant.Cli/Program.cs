@@ -1,4 +1,4 @@
-﻿using Assistant.Cli;
+using Assistant.Cli;
 using Assistant.Core.Chat;
 using System.Text;
 
@@ -20,43 +20,5 @@ catch (Exception ex)
     return 1;
 }
 
-Console.WriteLine($"Chatting with {config.OpenAI.ChatModel}. '/reset' clears the history, '/exit' quits.");
-
-while (true)
-{
-    Console.Write("> ");
-    var input = Console.ReadLine();
-
-    if (input is null) break;
-
-    var command = input.Trim();
-    if (command.Length == 0) continue;
-
-    if (command.StartsWith('/'))
-    {
-        if (command.Equals("/exit", StringComparison.OrdinalIgnoreCase)) break;
-
-        if (command.Equals("/reset", StringComparison.OrdinalIgnoreCase))
-        {
-            session.Reset();
-            Console.WriteLine("History cleared.");
-        }
-        else
-        {
-            Console.WriteLine($"Unknown command '{command}'. Available: /reset, /exit");
-        }
-        continue;
-    }
-
-    try
-    {
-        var result = await session.SendAsync(input);
-        ResponsePrinter.Print(result, session.TotalUsage, session.LifetimeUsage);
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Error: {ex.Message}");
-    }
-}
-
+await new ChatRepl(session, config.OpenAI.ChatModel).RunAsync();
 return 0;
