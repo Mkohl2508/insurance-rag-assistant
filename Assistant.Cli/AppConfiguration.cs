@@ -25,6 +25,8 @@ internal sealed record AppConfiguration(OpenAIOptions OpenAI, ChatSessionOptions
         var chat = config.GetSection(ChatSessionOptions.SectionName).Get<ChatSessionOptions>();
 
         var documents = config.GetSection(DocumentOptions.SectionName).Get<DocumentOptions>() ?? new DocumentOptions();
+        // Resolve like appsettings.json itself, so the CLI works from any working directory.
+        documents.DataDirectory = Path.GetFullPath(documents.DataDirectory, AppContext.BaseDirectory);
 
         return new AppConfiguration(openAI, chat, documents);
     }

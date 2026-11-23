@@ -7,6 +7,6 @@ public sealed class DocumentOptions
 {
     public const string SectionName = "Documents";
 
-    /// <summary>Directory containing the PDF files. Relative paths are resolved against the working directory.</summary>
+    /// <summary>Directory containing the PDF files. The CLI resolves relative paths against the application's base directory (where appsettings.json lives).</summary>
     public string DataDirectory { get; set; } = "data";
 }
