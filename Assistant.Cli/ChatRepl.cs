@@ -153,7 +153,7 @@ internal sealed class ChatRepl
         {
             var documents = _loader.LoadDirectory(_documents.DataDirectory);
             if (documents.Count == 0)
-                Console.WriteLine($"No PDF files found in '{Path.GetFullPath(_documents.DataDirectory)}'.");
+                Console.WriteLine($"No readable PDF files found in '{Path.GetFullPath(_documents.DataDirectory)}'.");
             return documents;
         }
         catch (Exception ex)

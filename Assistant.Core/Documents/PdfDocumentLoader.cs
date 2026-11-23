@@ -85,6 +85,7 @@ public sealed class PdfDocumentLoader
     /// <summary>
     /// Loads all *.pdf files in a directory (not recursive), ordered by file name.
     /// Files with identical content are loaded once (the first by name), so chunk IDs stay unique.
+    /// Files that cannot be read are logged as a warning and skipped.
     /// </summary>
     /// <exception cref="DirectoryNotFoundException">The directory does not exist.</exception>
     public IReadOnlyList<SourceDocument> LoadDirectory(string directory)
@@ -102,7 +103,17 @@ public sealed class PdfDocumentLoader
         foreach (var path in files)
         {
             var stopwatch = Stopwatch.StartNew();
-            var document = LoadWithoutLogging(path);
+            SourceDocument document;
+            try
+            {
+                document = LoadWithoutLogging(path);
+            }
+            catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException)
+            {
+                _logger.LogWarning("Skipped '{FileName}': {Error}", Path.GetFileName(path), ex.Message);
+                continue;
+            }
+
             if (byHash.TryAdd(document.ContentHash, document))
             {
                 documents.Add(document);

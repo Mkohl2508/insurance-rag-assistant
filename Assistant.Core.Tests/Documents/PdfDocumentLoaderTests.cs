@@ -118,6 +118,17 @@ public sealed class PdfDocumentLoaderTests : IDisposable
     }
 
     [Fact]
+    public void LoadDirectory_SkipsUnreadableFilesAndLoadsTheRest()
+    {
+        CreatePdf("a.pdf", ["Text"]);
+        File.WriteAllText(Path.Combine(_directory, "broken.pdf"), "not a pdf");
+
+        var documents = _loader.LoadDirectory(_directory);
+
+        Assert.Equal(["a.pdf"], documents.Select(d => d.FileName));
+    }
+
+    [Fact]
     public void LoadDirectory_MatchesExtensionCaseInsensitively()
     {
         CreatePdf("UPPER.PDF", ["Text"]);
