@@ -1,29 +1,18 @@
-﻿using Assistant.Core.Chat;
-using Assistant.Core.Configuration;
+﻿using Assistant.Cli;
+using Assistant.Core.Chat;
 using System.Text;
-using Microsoft.Extensions.Configuration;
 
 // LLM answers can contain non-ASCII characters (quotes, dashes, currency signs).
 Console.OutputEncoding = Encoding.UTF8;
 Console.InputEncoding = Encoding.UTF8;
 
-OpenAIOptions options;
+AppConfiguration config;
 ChatSession session;
 
 try
 {
-    var config = new ConfigurationBuilder()
-        .SetBasePath(AppContext.BaseDirectory)
-        .AddJsonFile("appsettings.json", optional: false)
-        .AddUserSecrets<Program>()
-        .Build();
-
-    options = config.GetSection(OpenAIOptions.SectionName).Get<OpenAIOptions>()
-              ?? throw new InvalidOperationException($"Section '{OpenAIOptions.SectionName}' is missing from the configuration.");
-
-    var sessionOptions = config.GetSection(ChatSessionOptions.SectionName).Get<ChatSessionOptions>();
-
-    session = new ChatSession(OpenAIChatClientFactory.Create(options), sessionOptions);
+    config = AppConfiguration.Load();
+    session = new ChatSession(OpenAIChatClientFactory.Create(config.OpenAI), config.Chat);
 }
 catch (Exception ex)
 {
@@ -31,7 +20,7 @@ catch (Exception ex)
     return 1;
 }
 
-Console.WriteLine($"Chatting with {options.ChatModel}. '/reset' clears the history, '/exit' quits.");
+Console.WriteLine($"Chatting with {config.OpenAI.ChatModel}. '/reset' clears the history, '/exit' quits.");
 
 while (true)
 {
