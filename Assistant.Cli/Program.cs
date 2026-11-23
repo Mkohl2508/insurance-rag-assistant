@@ -1,6 +1,11 @@
 ﻿using Assistant.Core.Chat;
 using Assistant.Core.Configuration;
+using System.Text;
 using Microsoft.Extensions.Configuration;
+
+// LLM answers can contain non-ASCII characters (quotes, dashes, currency signs).
+Console.OutputEncoding = Encoding.UTF8;
+Console.InputEncoding = Encoding.UTF8;
 
 OpenAIOptions options;
 ChatSession session;
