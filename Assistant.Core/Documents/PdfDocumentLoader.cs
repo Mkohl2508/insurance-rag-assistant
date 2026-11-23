@@ -59,7 +59,7 @@ public sealed class PdfDocumentLoader
         if (!Directory.Exists(directory))
             throw new DirectoryNotFoundException($"Document directory '{Path.GetFullPath(directory)}' does not exist.");
 
-        return Directory.EnumerateFiles(directory, "*.pdf")
+        return Directory.EnumerateFiles(directory, "*.pdf", new EnumerationOptions { MatchCasing = MatchCasing.CaseInsensitive })
             .Order(StringComparer.OrdinalIgnoreCase)
             .Select(LoadFile)
             .ToList();

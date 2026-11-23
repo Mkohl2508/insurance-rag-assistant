@@ -107,6 +107,16 @@ public sealed class PdfDocumentLoaderTests : IDisposable
     }
 
     [Fact]
+    public void LoadDirectory_MatchesExtensionCaseInsensitively()
+    {
+        CreatePdf("UPPER.PDF", ["Text"]);
+
+        var documents = _loader.LoadDirectory(_directory);
+
+        Assert.Equal(["UPPER.PDF"], documents.Select(d => d.FileName));
+    }
+
+    [Fact]
     public void LoadDirectory_ThrowsWhenDirectoryIsMissing()
     {
         var missing = Path.Combine(_directory, "missing");
