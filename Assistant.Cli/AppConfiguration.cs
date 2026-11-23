@@ -1,5 +1,6 @@
 using Assistant.Core.Chat;
 using Assistant.Core.Configuration;
+using Assistant.Core.Documents;
 using Microsoft.Extensions.Configuration;
 
 namespace Assistant.Cli;
@@ -7,7 +8,7 @@ namespace Assistant.Cli;
 /// <summary>
 /// All settings the CLI needs, bound from appsettings.json and user secrets.
 /// </summary>
-internal sealed record AppConfiguration(OpenAIOptions OpenAI, ChatSessionOptions? Chat)
+internal sealed record AppConfiguration(OpenAIOptions OpenAI, ChatSessionOptions? Chat, DocumentOptions Documents)
 {
     /// <exception cref="InvalidOperationException">A required section is missing.</exception>
     public static AppConfiguration Load()
@@ -23,6 +24,8 @@ internal sealed record AppConfiguration(OpenAIOptions OpenAI, ChatSessionOptions
 
         var chat = config.GetSection(ChatSessionOptions.SectionName).Get<ChatSessionOptions>();
 
-        return new AppConfiguration(openAI, chat);
+        var documents = config.GetSection(DocumentOptions.SectionName).Get<DocumentOptions>() ?? new DocumentOptions();
+
+        return new AppConfiguration(openAI, chat, documents);
     }
 }
