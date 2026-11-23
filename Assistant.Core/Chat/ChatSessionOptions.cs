@@ -1,7 +1,7 @@
 namespace Assistant.Core.Chat;
 
 /// <summary>
-/// Provider-neutrale Einstellungen für eine <see cref="ChatSession"/>.
+/// Provider-neutral settings for a <see cref="ChatSession"/>.
 /// </summary>
 public sealed class ChatSessionOptions
 {

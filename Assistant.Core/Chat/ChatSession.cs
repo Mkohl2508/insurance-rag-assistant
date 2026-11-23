@@ -4,7 +4,7 @@ using Microsoft.Extensions.AI;
 namespace Assistant.Core.Chat;
 
 /// <summary>
-/// Hält den Gesprächsverlauf und schickt Anfragen an das LLM. Summiert den Token-Verbrauch der Session.
+/// Keeps the conversation history, sends requests to the LLM and accumulates token usage.
 /// </summary>
 public sealed class ChatSession
 {
@@ -47,7 +47,7 @@ public sealed class ChatSession
         }
         catch
         {
-            // Fehlgeschlagene Anfrage nicht im Verlauf lassen.
+            // Do not keep a failed request in the history.
             _history.RemoveAt(_history.Count - 1);
             throw;
         }

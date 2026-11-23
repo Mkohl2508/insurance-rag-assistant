@@ -1,7 +1,7 @@
 namespace Assistant.Core.Chat;
 
 /// <summary>
-/// Ergebnis einer einzelnen Anfrage an das LLM inkl. Metadaten.
+/// Result of a single request to the LLM, including metadata.
 /// </summary>
 public sealed record ChatResponseInfo(
     string Text,

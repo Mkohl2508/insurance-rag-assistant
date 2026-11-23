@@ -9,13 +9,13 @@ var config = new ConfigurationBuilder()
     .Build();
 
 var options = config.GetSection(OpenAIOptions.SectionName).Get<OpenAIOptions>()
-              ?? throw new InvalidOperationException($"Sektion '{OpenAIOptions.SectionName}' fehlt in der Konfiguration.");
+              ?? throw new InvalidOperationException($"Section '{OpenAIOptions.SectionName}' is missing from the configuration.");
 
 var sessionOptions = config.GetSection(ChatSessionOptions.SectionName).Get<ChatSessionOptions>();
 
 var session = new ChatSession(OpenAIChatClientFactory.Create(options), sessionOptions);
 
-Console.WriteLine($"Chat mit {options.ChatModel}. '/reset' leert den Verlauf, '/exit' beendet.");
+Console.WriteLine($"Chatting with {options.ChatModel}. '/reset' clears the history, '/exit' quits.");
 
 while (true)
 {
@@ -30,7 +30,7 @@ while (true)
     if (command == "/reset")
     {
         session.Reset();
-        Console.WriteLine("Verlauf zurückgesetzt.");
+        Console.WriteLine("History cleared.");
         continue;
     }
 
@@ -40,10 +40,10 @@ while (true)
         Console.WriteLine(result.Text);
         Console.WriteLine(
             $"[{result.Model} | in {result.Usage.InputTokens} / out {result.Usage.OutputTokens} " +
-            $"| {result.Duration.TotalSeconds:F1}s | Session Σ {session.TotalUsage.TotalTokens} Tokens]");
+            $"| {result.Duration.TotalSeconds:F1}s | session total {session.TotalUsage.TotalTokens} tokens]");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Fehler: {ex.Message}");
+        Console.WriteLine($"Error: {ex.Message}");
     }
 }

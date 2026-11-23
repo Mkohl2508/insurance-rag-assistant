@@ -1,8 +1,8 @@
 namespace Assistant.Core.Configuration;
 
 /// <summary>
-/// Verbindungseinstellungen für OpenAI. Wird an die Sektion "OpenAI" gebunden.
-/// Session-Verhalten (SystemPrompt etc.) liegt in <see cref="Chat.ChatSessionOptions"/> unter "OpenAI:Chat".
+/// Connection settings for OpenAI. Bound to the "OpenAI" section.
+/// Session behaviour (system prompt etc.) lives in <see cref="Chat.ChatSessionOptions"/> under "OpenAI:Chat".
 /// </summary>
 public sealed class OpenAIOptions
 {

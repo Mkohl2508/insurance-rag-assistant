@@ -5,7 +5,7 @@ using OpenAI;
 namespace Assistant.Core.Chat;
 
 /// <summary>
-/// Erzeugt den <see cref="IChatClient"/>. Einziger Ort, der das OpenAI-SDK direkt kennt.
+/// Creates the <see cref="IChatClient"/>. The only place that knows the OpenAI SDK directly.
 /// </summary>
 public static class OpenAIChatClientFactory
 {
@@ -14,9 +14,9 @@ public static class OpenAIChatClientFactory
         ArgumentNullException.ThrowIfNull(options);
 
         if (string.IsNullOrWhiteSpace(options.ApiKey))
-            throw new InvalidOperationException($"'{OpenAIOptions.SectionName}:ApiKey' ist nicht gesetzt.");
+            throw new InvalidOperationException($"'{OpenAIOptions.SectionName}:ApiKey' is not set.");
         if (string.IsNullOrWhiteSpace(options.ChatModel))
-            throw new InvalidOperationException($"'{OpenAIOptions.SectionName}:ChatModel' ist nicht gesetzt.");
+            throw new InvalidOperationException($"'{OpenAIOptions.SectionName}:ChatModel' is not set.");
 
         return new OpenAIClient(options.ApiKey)
             .GetChatClient(options.ChatModel)

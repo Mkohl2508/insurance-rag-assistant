@@ -8,12 +8,12 @@ public class ChatSessionTests
     [Fact]
     public async Task SendAsync_ReturnsTextAndMetadata()
     {
-        var client = new FakeChatClient().Returns("Hallo!", inputTokens: 12, outputTokens: 3, model: "m1");
+        var client = new FakeChatClient().Returns("Hello!", inputTokens: 12, outputTokens: 3, model: "m1");
         var session = new ChatSession(client);
 
         var result = await session.SendAsync("Hi");
 
-        Assert.Equal("Hallo!", result.Text);
+        Assert.Equal("Hello!", result.Text);
         Assert.Equal("m1", result.Model);
         Assert.Equal(new TokenUsage(12, 3, 15), result.Usage);
         Assert.Equal("stop", result.FinishReason);

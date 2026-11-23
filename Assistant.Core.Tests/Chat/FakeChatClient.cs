@@ -3,8 +3,8 @@ using Microsoft.Extensions.AI;
 namespace Assistant.Core.Tests.Chat;
 
 /// <summary>
-/// Test-Double für <see cref="IChatClient"/>: liefert vorbereitete Antworten oder wirft eine Exception
-/// und merkt sich, welche Nachrichten bei jedem Aufruf übergeben wurden.
+/// Test double for <see cref="IChatClient"/>: returns prepared responses or throws an exception
+/// and records the messages passed on each call.
 /// </summary>
 internal sealed class FakeChatClient : IChatClient
 {
@@ -38,7 +38,7 @@ internal sealed class FakeChatClient : IChatClient
     public Task<ChatResponse> GetResponseAsync(
         IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
-        // Snapshot, da die Session ihre Liste danach weiter verändert.
+        // Snapshot, because the session keeps mutating its list afterwards.
         ReceivedMessages.Add(messages.ToList());
         ReceivedOptions.Add(options);
         return Task.FromResult(_responses.Dequeue()());
