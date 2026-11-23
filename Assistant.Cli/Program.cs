@@ -2,18 +2,29 @@
 using Assistant.Core.Configuration;
 using Microsoft.Extensions.Configuration;
 
-var config = new ConfigurationBuilder()
-    .SetBasePath(AppContext.BaseDirectory)
-    .AddJsonFile("appsettings.json", optional: false)
-    .AddUserSecrets<Program>()
-    .Build();
+OpenAIOptions options;
+ChatSession session;
 
-var options = config.GetSection(OpenAIOptions.SectionName).Get<OpenAIOptions>()
+try
+{
+    var config = new ConfigurationBuilder()
+        .SetBasePath(AppContext.BaseDirectory)
+        .AddJsonFile("appsettings.json", optional: false)
+        .AddUserSecrets<Program>()
+        .Build();
+
+    options = config.GetSection(OpenAIOptions.SectionName).Get<OpenAIOptions>()
               ?? throw new InvalidOperationException($"Section '{OpenAIOptions.SectionName}' is missing from the configuration.");
 
-var sessionOptions = config.GetSection(ChatSessionOptions.SectionName).Get<ChatSessionOptions>();
+    var sessionOptions = config.GetSection(ChatSessionOptions.SectionName).Get<ChatSessionOptions>();
 
-var session = new ChatSession(OpenAIChatClientFactory.Create(options), sessionOptions);
+    session = new ChatSession(OpenAIChatClientFactory.Create(options), sessionOptions);
+}
+catch (Exception ex)
+{
+    Console.Error.WriteLine($"Configuration error: {ex.Message}");
+    return 1;
+}
 
 Console.WriteLine($"Chatting with {options.ChatModel}. '/reset' clears the history, '/exit' quits.");
 
@@ -47,3 +58,5 @@ while (true)
         Console.WriteLine($"Error: {ex.Message}");
     }
 }
+
+return 0;
