@@ -1,5 +1,8 @@
 using Assistant.Core.Chat;
+using Assistant.Core.Configuration;
 using Assistant.Core.Documents;
+using Assistant.Core.Embeddings;
+using System.Diagnostics;
 
 namespace Assistant.Cli;
 
@@ -8,34 +11,36 @@ namespace Assistant.Cli;
 /// </summary>
 internal sealed class ChatRepl
 {
-    private sealed record Command(string Description, Action Execute);
+    private sealed record Command(string Description, Func<Task> Execute);
 
     private const int PreviewLength = 80;
 
     private readonly ChatSession _session;
-    private readonly string _modelName;
+    private readonly OpenAIOptions _openAI;
     private readonly DocumentOptions _documents;
     private readonly Dictionary<string, Command> _commands;
+    private ChunkEmbedder? _embedder;
     private bool _exitRequested;
 
-    public ChatRepl(ChatSession session, string modelName, DocumentOptions documents)
+    public ChatRepl(ChatSession session, OpenAIOptions openAI, DocumentOptions documents)
     {
         _session = session;
-        _modelName = modelName;
+        _openAI = openAI;
         _documents = documents;
         _commands = new Dictionary<string, Command>(StringComparer.OrdinalIgnoreCase)
         {
-            ["/reset"] = new("clears the history", Reset),
-            ["/pages"] = new("lists the loaded PDF pages", ShowPages),
-            ["/chunks"] = new("lists the chunks of the loaded PDFs", ShowChunks),
-            ["/exit"] = new("quits", () => _exitRequested = true),
+            ["/reset"] = new("clears the history", Sync(Reset)),
+            ["/pages"] = new("lists the loaded PDF pages", Sync(ShowPages)),
+            ["/chunks"] = new("lists the chunks of the loaded PDFs", Sync(ShowChunks)),
+            ["/embed"] = new("embeds the chunks of the loaded PDFs", EmbedChunksAsync),
+            ["/exit"] = new("quits", Sync(() => _exitRequested = true)),
         };
     }
 
     public async Task RunAsync()
     {
         var help = string.Join(", ", _commands.Select(c => $"'{c.Key}' {c.Value.Description}"));
-        Console.WriteLine($"Chatting with {_modelName}. {help}.");
+        Console.WriteLine($"Chatting with {_openAI.ChatModel}. {help}.");
 
         while (!_exitRequested)
         {
@@ -48,16 +53,22 @@ internal sealed class ChatRepl
             if (trimmed.Length == 0) continue;
 
             if (trimmed.StartsWith('/'))
-                RunCommand(trimmed);
+                await RunCommandAsync(trimmed);
             else
                 await SendAsync(input);
         }
     }
 
-    private void RunCommand(string name)
+    private static Func<Task> Sync(Action action) => () =>
+    {
+        action();
+        return Task.CompletedTask;
+    };
+
+    private async Task RunCommandAsync(string name)
     {
         if (_commands.TryGetValue(name, out var command))
-            command.Execute();
+            await command.Execute();
         else
             Console.WriteLine($"Unknown command '{name}'. Available: {string.Join(", ", _commands.Keys)}");
     }
@@ -90,6 +101,42 @@ internal sealed class ChatRepl
             Console.WriteLine($"{document.FileName} ({chunks.Count} chunks)");
             foreach (var chunk in chunks)
                 Console.WriteLine($"  {chunk.Id}  {chunk.Text.Length,3}  {Preview(chunk.Text)}");
+        }
+    }
+
+    private async Task EmbedChunksAsync()
+    {
+        var documents = LoadDocuments();
+        if (documents.Count == 0) return;
+
+        var chunker = new DocumentChunker();
+        var chunks = documents.SelectMany(chunker.Chunk).ToList();
+        if (chunks.Count == 0)
+        {
+            Console.WriteLine("No text chunks to embed.");
+            return;
+        }
+
+        try
+        {
+            // Created on first use, so a missing embedding configuration does not prevent chatting.
+            _embedder ??= new ChunkEmbedder(OpenAIEmbeddingGeneratorFactory.Create(_openAI));
+
+            var stopwatch = Stopwatch.StartNew();
+            var embedded = await _embedder.EmbedAsync(chunks);
+            stopwatch.Stop();
+
+            foreach (var document in embedded.GroupBy(e => e.Chunk.FileName))
+                Console.WriteLine($"{document.Key}: {document.Count()} chunks embedded");
+
+            var dimensions = embedded.FirstOrDefault()?.Vector.Length ?? 0;
+            Console.WriteLine(
+                $"{embedded.Count}/{chunks.Count} chunks embedded, {dimensions} dimensions, " +
+                $"{stopwatch.Elapsed.TotalSeconds:F1} s");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
         }
     }
 

@@ -20,5 +20,5 @@ catch (Exception ex)
     return 1;
 }
 
-await new ChatRepl(session, config.OpenAI.ChatModel, config.Documents).RunAsync();
+await new ChatRepl(session, config.OpenAI, config.Documents).RunAsync();
 return 0;
