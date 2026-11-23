@@ -8,7 +8,8 @@ namespace Assistant.Cli;
 /// <summary>
 /// All settings the CLI needs, bound from appsettings.json and user secrets.
 /// </summary>
-internal sealed record AppConfiguration(OpenAIOptions OpenAI, ChatSessionOptions? Chat, DocumentOptions Documents)
+internal sealed record AppConfiguration(
+    OpenAIOptions OpenAI, ChatSessionOptions? Chat, DocumentOptions Documents, IConfigurationSection Logging)
 {
     /// <exception cref="InvalidOperationException">A required section is missing.</exception>
     public static AppConfiguration Load()
@@ -28,6 +29,6 @@ internal sealed record AppConfiguration(OpenAIOptions OpenAI, ChatSessionOptions
         // Resolve like appsettings.json itself, so the CLI works from any working directory.
         documents.DataDirectory = Path.GetFullPath(documents.DataDirectory, AppContext.BaseDirectory);
 
-        return new AppConfiguration(openAI, chat, documents);
+        return new AppConfiguration(openAI, chat, documents, config.GetSection("Logging"));
     }
 }

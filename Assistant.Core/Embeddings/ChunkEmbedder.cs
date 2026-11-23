@@ -1,5 +1,8 @@
 using Assistant.Core.Documents;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using System.Diagnostics;
 
 namespace Assistant.Core.Embeddings;
 
@@ -11,15 +14,18 @@ public sealed class ChunkEmbedder
 {
     private readonly IEmbeddingGenerator<string, Embedding<float>> _generator;
     private readonly int _batchSize;
+    private readonly ILogger _logger;
 
     /// <param name="batchSize">Maximum number of chunks per request.</param>
-    public ChunkEmbedder(IEmbeddingGenerator<string, Embedding<float>> generator, int batchSize = 100)
+    public ChunkEmbedder(
+        IEmbeddingGenerator<string, Embedding<float>> generator, int batchSize = 100, ILogger<ChunkEmbedder>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(generator);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(batchSize);
 
         _generator = generator;
         _batchSize = batchSize;
+        _logger = logger ?? NullLogger<ChunkEmbedder>.Instance;
     }
 
     /// <exception cref="InvalidOperationException">A request failed or returned an unusable result.</exception>
@@ -28,10 +34,19 @@ public sealed class ChunkEmbedder
     {
         ArgumentNullException.ThrowIfNull(chunks);
 
+        var batches = chunks.Where(c => !string.IsNullOrWhiteSpace(c.Text)).Chunk(_batchSize).ToList();
+        _logger.LogInformation("Embedding {ChunkCount} chunks in {BatchCount} batches",
+            batches.Sum(b => b.Length), batches.Count);
+
         var result = new List<EmbeddedChunk>();
-        foreach (var batch in chunks.Where(c => !string.IsNullOrWhiteSpace(c.Text)).Chunk(_batchSize))
+        for (var batchIndex = 0; batchIndex < batches.Count; batchIndex++)
         {
+            var batch = batches[batchIndex];
+            var stopwatch = Stopwatch.StartNew();
             var embeddings = await GenerateAsync(batch, cancellationToken);
+            _logger.LogInformation("Batch {BatchNumber}/{BatchCount}: {ChunkCount} chunks ({Chunks}), {ElapsedMs} ms",
+                batchIndex + 1, batches.Count, batch.Length, Describe(batch), stopwatch.ElapsedMilliseconds);
+
             for (var i = 0; i < batch.Length; i++)
                 result.Add(new EmbeddedChunk(batch[i], embeddings[i].Vector));
         }

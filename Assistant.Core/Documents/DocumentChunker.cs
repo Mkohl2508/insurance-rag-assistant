@@ -1,3 +1,6 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
 namespace Assistant.Core.Documents;
 
 /// <summary>
@@ -11,10 +14,11 @@ public sealed class DocumentChunker
 
     private readonly int _chunkSize;
     private readonly int _overlap;
+    private readonly ILogger _logger;
 
     /// <param name="chunkSize">Maximum chunk length in characters.</param>
     /// <param name="overlap">Approximate number of characters shared by consecutive chunks of a page.</param>
-    public DocumentChunker(int chunkSize = 600, int overlap = 100)
+    public DocumentChunker(int chunkSize = 600, int overlap = 100, ILogger<DocumentChunker>? logger = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(chunkSize);
         ArgumentOutOfRangeException.ThrowIfNegative(overlap);
@@ -22,6 +26,7 @@ public sealed class DocumentChunker
 
         _chunkSize = chunkSize;
         _overlap = overlap;
+        _logger = logger ?? NullLogger<DocumentChunker>.Instance;
     }
 
     public IReadOnlyList<DocumentChunk> Chunk(SourceDocument document)
@@ -48,6 +53,8 @@ public sealed class DocumentChunker
             }
         }
 
+        _logger.LogDebug("Chunked '{FileName}': {ChunkCount} chunks from {PageCount} pages",
+            document.FileName, chunks.Count, document.Pages.Count);
         return chunks;
     }
 

@@ -2,6 +2,7 @@ using Assistant.Core.Chat;
 using Assistant.Core.Configuration;
 using Assistant.Core.Documents;
 using Assistant.Core.Embeddings;
+using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
 namespace Assistant.Cli;
@@ -18,15 +19,21 @@ internal sealed class ChatRepl
     private readonly ChatSession _session;
     private readonly OpenAIOptions _openAI;
     private readonly DocumentOptions _documents;
+    private readonly ILoggerFactory _loggerFactory;
+    private readonly PdfDocumentLoader _loader;
+    private readonly DocumentChunker _chunker;
     private readonly Dictionary<string, Command> _commands;
     private ChunkEmbedder? _embedder;
     private bool _exitRequested;
 
-    public ChatRepl(ChatSession session, OpenAIOptions openAI, DocumentOptions documents)
+    public ChatRepl(ChatSession session, OpenAIOptions openAI, DocumentOptions documents, ILoggerFactory loggerFactory)
     {
         _session = session;
         _openAI = openAI;
         _documents = documents;
+        _loggerFactory = loggerFactory;
+        _loader = new PdfDocumentLoader(loggerFactory.CreateLogger<PdfDocumentLoader>());
+        _chunker = new DocumentChunker(logger: loggerFactory.CreateLogger<DocumentChunker>());
         _commands = new Dictionary<string, Command>(StringComparer.OrdinalIgnoreCase)
         {
             ["/reset"] = new("clears the history", Sync(Reset)),
@@ -94,10 +101,9 @@ internal sealed class ChatRepl
 
     private void ShowChunks()
     {
-        var chunker = new DocumentChunker();
         foreach (var document in LoadDocuments())
         {
-            var chunks = chunker.Chunk(document);
+            var chunks = _chunker.Chunk(document);
             Console.WriteLine($"{document.FileName} ({chunks.Count} chunks)");
             foreach (var chunk in chunks)
                 Console.WriteLine($"  {chunk.Id}  {chunk.Text.Length,3}  {Preview(chunk.Text)}");
@@ -109,8 +115,7 @@ internal sealed class ChatRepl
         var documents = LoadDocuments();
         if (documents.Count == 0) return;
 
-        var chunker = new DocumentChunker();
-        var chunks = documents.SelectMany(chunker.Chunk).ToList();
+        var chunks = documents.SelectMany(_chunker.Chunk).ToList();
         if (chunks.Count == 0)
         {
             Console.WriteLine("No text chunks to embed.");
@@ -120,7 +125,8 @@ internal sealed class ChatRepl
         try
         {
             // Created on first use, so a missing embedding configuration does not prevent chatting.
-            _embedder ??= new ChunkEmbedder(OpenAIEmbeddingGeneratorFactory.Create(_openAI));
+            _embedder ??= new ChunkEmbedder(
+                OpenAIEmbeddingGeneratorFactory.Create(_openAI), logger: _loggerFactory.CreateLogger<ChunkEmbedder>());
 
             var stopwatch = Stopwatch.StartNew();
             var embedded = await _embedder.EmbedAsync(chunks);
@@ -145,7 +151,7 @@ internal sealed class ChatRepl
     {
         try
         {
-            var documents = new PdfDocumentLoader().LoadDirectory(_documents.DataDirectory);
+            var documents = _loader.LoadDirectory(_documents.DataDirectory);
             if (documents.Count == 0)
                 Console.WriteLine($"No PDF files found in '{Path.GetFullPath(_documents.DataDirectory)}'.");
             return documents;

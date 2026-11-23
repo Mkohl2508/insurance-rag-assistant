@@ -1,5 +1,6 @@
 using Assistant.Cli;
 using Assistant.Core.Chat;
+using Microsoft.Extensions.Logging;
 using System.Text;
 
 // LLM answers can contain non-ASCII characters (quotes, dashes, currency signs).
@@ -20,5 +21,15 @@ catch (Exception ex)
     return 1;
 }
 
-await new ChatRepl(session, config.OpenAI, config.Documents).RunAsync();
+// Logs go to stderr, one line per entry, so they stay distinguishable from the chat output.
+using var loggerFactory = LoggerFactory.Create(builder => builder
+    .AddConfiguration(config.Logging)
+    .AddSimpleConsole(options =>
+    {
+        options.SingleLine = true;
+        options.TimestampFormat = "HH:mm:ss ";
+    })
+    .AddConsole(options => options.LogToStandardErrorThreshold = LogLevel.Trace));
+
+await new ChatRepl(session, config.OpenAI, config.Documents, loggerFactory).RunAsync();
 return 0;

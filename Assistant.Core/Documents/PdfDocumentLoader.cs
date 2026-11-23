@@ -1,3 +1,6 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor;
@@ -9,9 +12,25 @@ namespace Assistant.Core.Documents;
 /// </summary>
 public sealed class PdfDocumentLoader
 {
+    private readonly ILogger _logger;
+
+    public PdfDocumentLoader(ILogger<PdfDocumentLoader>? logger = null)
+    {
+        _logger = logger ?? NullLogger<PdfDocumentLoader>.Instance;
+    }
+
     /// <summary>Loads a single PDF file with its metadata and all pages that contain text.</summary>
     /// <exception cref="InvalidDataException">The file is not a readable PDF; the message names the file.</exception>
     public SourceDocument LoadFile(string path)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        var document = LoadWithoutLogging(path);
+        LogLoaded(document, stopwatch.ElapsedMilliseconds);
+        return document;
+    }
+
+    /// <exception cref="InvalidDataException">The file is not a readable PDF; the message names the file.</exception>
+    private SourceDocument LoadWithoutLogging(string path)
     {
         var file = new FileInfo(path);
         var bytes = File.ReadAllBytes(file.FullName);
@@ -25,7 +44,16 @@ public sealed class PdfDocumentLoader
         }
     }
 
-    private static SourceDocument Read(FileInfo file, byte[] bytes)
+    private void LogLoaded(SourceDocument document, long elapsedMs)
+    {
+        _logger.LogInformation("Loaded '{FileName}': {PagesWithText}/{TotalPages} pages with text, {ElapsedMs} ms",
+            document.FileName, document.Pages.Count, document.TotalPageCount, elapsedMs);
+        if (document.Pages.Count == 0)
+            _logger.LogWarning("'{FileName}' contains no extractable text (scanned PDF?) and will produce no chunks",
+                document.FileName);
+    }
+
+    private SourceDocument Read(FileInfo file, byte[] bytes)
     {
         using var document = PdfDocument.Open(bytes);
 
@@ -35,6 +63,8 @@ public sealed class PdfDocumentLoader
             var text = ContentOrderTextExtractor.GetText(page).Trim();
             if (text.Length > 0)
                 pages.Add(new DocumentPage(page.Number, text));
+            else
+                _logger.LogDebug("'{FileName}' page {PageNumber} has no text, skipped", file.Name, page.Number);
         }
 
         var info = document.Information;
@@ -62,11 +92,30 @@ public sealed class PdfDocumentLoader
         if (!Directory.Exists(directory))
             throw new DirectoryNotFoundException($"Document directory '{Path.GetFullPath(directory)}' does not exist.");
 
-        return Directory.EnumerateFiles(directory, "*.pdf", new EnumerationOptions { MatchCasing = MatchCasing.CaseInsensitive })
+        var files = Directory.EnumerateFiles(directory, "*.pdf", new EnumerationOptions { MatchCasing = MatchCasing.CaseInsensitive })
             .Order(StringComparer.OrdinalIgnoreCase)
-            .Select(LoadFile)
-            .DistinctBy(d => d.ContentHash)
             .ToList();
+        _logger.LogInformation("Loading {FileCount} PDF files from '{Directory}'", files.Count, Path.GetFullPath(directory));
+
+        var documents = new List<SourceDocument>();
+        var byHash = new Dictionary<string, SourceDocument>();
+        foreach (var path in files)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            var document = LoadWithoutLogging(path);
+            if (byHash.TryAdd(document.ContentHash, document))
+            {
+                documents.Add(document);
+                LogLoaded(document, stopwatch.ElapsedMilliseconds);
+            }
+            else
+            {
+                _logger.LogInformation("Skipped '{FileName}': same content as '{OriginalFileName}'",
+                    document.FileName, byHash[document.ContentHash].FileName);
+            }
+        }
+
+        return documents;
     }
 
     private static string? NullIfBlank(string? value) =>
