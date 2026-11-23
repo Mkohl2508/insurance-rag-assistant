@@ -58,7 +58,8 @@ while (true)
             Console.WriteLine($"[Warning: answer may be incomplete (finish reason: {result.FinishReason})]");
         Console.WriteLine(
             $"[{result.Model} | in {result.Usage.InputTokens} / out {result.Usage.OutputTokens} " +
-            $"| {result.Duration.TotalSeconds:F1}s | session total {session.TotalUsage.TotalTokens} tokens]");
+            $"| {result.Duration.TotalSeconds:F1}s | since reset {session.TotalUsage.TotalTokens} " +
+            $"| lifetime {session.LifetimeUsage.TotalTokens} tokens]");
     }
     catch (Exception ex)
     {
