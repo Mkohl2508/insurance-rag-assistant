@@ -3,6 +3,9 @@
 ## Language
 - Everything in the repo is English: code, comments, XML docs, console/exception messages, LLM prompts, test data, docs.
 
+## Workflow
+- After finishing a feature implementation, run the `code-simplifier` agent on the changed code before committing. Commit only after its changes are reviewed and build and tests pass.
+
 ## Commits
 - Use Conventional Commits in English: `type(scope): summary` (types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`; scopes: `core`, `cli`).
 - Keep commits atomic: one logical change per commit, each one builds and passes tests.
