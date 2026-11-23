@@ -51,13 +51,7 @@ while (true)
     try
     {
         var result = await session.SendAsync(input);
-        Console.WriteLine(result.Text);
-        if (!result.IsComplete)
-            Console.WriteLine($"[Warning: answer may be incomplete (finish reason: {result.FinishReason})]");
-        Console.WriteLine(
-            $"[{result.Model} | in {result.Usage.InputTokens} / out {result.Usage.OutputTokens} " +
-            $"| {result.Duration.TotalSeconds:F1}s | since reset {session.TotalUsage.TotalTokens} " +
-            $"| lifetime {session.LifetimeUsage.TotalTokens} tokens]");
+        ResponsePrinter.Print(result, session.TotalUsage, session.LifetimeUsage);
     }
     catch (Exception ex)
     {
