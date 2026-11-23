@@ -102,6 +102,14 @@ public class DocumentChunkerTests
     }
 
     [Fact]
+    public void Chunk_SkipsBlankPages()
+    {
+        var chunks = new DocumentChunker().Chunk(Doc(new DocumentPage(1, " \n "), new DocumentPage(2, "Text")));
+
+        Assert.Equal(2, Assert.Single(chunks).PageNumber);
+    }
+
+    [Fact]
     public void Chunk_IdsAreStableAndUnique()
     {
         var chunker = new DocumentChunker(60, 15);

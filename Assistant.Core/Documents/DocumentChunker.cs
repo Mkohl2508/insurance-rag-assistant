@@ -31,7 +31,11 @@ public sealed class DocumentChunker
 
         foreach (var page in document.Pages)
         {
-            var texts = SplitPage(Normalize(page.Text));
+            var text = Normalize(page.Text);
+            if (text.Length == 0)
+                continue;
+
+            var texts = SplitPage(text);
             for (var i = 0; i < texts.Count; i++)
             {
                 chunks.Add(new DocumentChunk(
